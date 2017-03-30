@@ -269,10 +269,11 @@ end
 if isempty(out)
     err=true; %what does this do?
     % log error message
-    f_log=fopen(path_log,'a');  % append to log-file
-    fprintf(f_log,[datestr(datetime,'yyyymmdd_HHMMSS'),' PosAnal        : Error low counts. ',...
-        'path=%s, filenum=%d, files=%d, plots=%d, rot_angle=%d,\n'],filepath,filenumstart,files,plots,rot_angle);
-    fclose(f_log);
+    % % BUG
+% %     f_log=fopen(path_log,'a');  % append to log-file
+% %     fprintf(f_log,[datestr(datetime,'yyyymmdd_HHMMSS'),' PosAnal        : Error low counts. ',...
+% %         'path=%s, filenum=%d, files=%d, plots=%d, rot_angle=%d,\n'],filepath,filenumstart,files,plots,rot_angle);
+% %     fclose(f_log);
 end
 
 end
