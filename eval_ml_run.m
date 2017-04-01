@@ -1,30 +1,35 @@
 %%Summarise ML run
 %30/03/2017 DK Shin
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%TODO
+%   * save only vars specific to analysis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%configs
 %experiment specific
-dir_data='Y:\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\run4';    % data dir
-dir_log=[dir_data,'\log'];      % dir for logs
+dir_data='Y:\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\run6';    % data dir
+dir_log=[dir_data,'\log'];          % dir for logs (currently output_write mat files)
+dir_output=[dir_data,'\output'];    % dir of output
 
 fopts.filepath=[dir_data,'\d'];     %filepath to data
-file_id=1:1885;  % file ids to analyse
+file_id=1:871;  % file ids to analyse
 
 fopts.xlim=[-40e-3, 35e-3];
 fopts.ylim=[-15e-3, 20e-3];
 
-fopts.t_0=1.9977;
+fopts.t_0=2.6073;
 
-fopts.dt=5e-3;
-fopts.n_pulse=250;
+fopts.dt=10e-3;
+fopts.n_pulse=110;
 
 %general flags
-fopts.min_count=3000;
+fopts.min_count=1000;
 
 fopts.log=false;
 fopts.graphics=false;
 
 %SHUNT BOUNDARIES
-param_boundary=[3.4,0.25,0,0.75];   % shunt boundaries [Q_i,Q_f,Sh_i,Sh_f]
+param_boundary=[3.4,0.14,0,0.87];   % shunt boundaries [Q_i,Q_f,Sh_i,Sh_f]
 
 %%main
 n_shots=length(file_id);
@@ -42,29 +47,51 @@ for ii=1:n_shots
 end
 
 %build time vector
-t=fopts.t_0+fopts.dt*[0:fopts.n_pulse-1];
+t=fopts.t_0+fopts.dt*(0:fopts.n_pulse-1);
 
 %% Get shunt params from logs
-dir_orig=cd(dir_log);
-log_files=dir('output_write*.mat');
-
-idx_params=zeros(length(log_files),1);
-shunt_params=cell(length(log_files),1);
-
-for ii=1:length(log_files)
-    [idx_params(ii),shunt_params{ii}]=get_params_from_log(log_files(ii).name);
+if isdir(dir_log)
+    dir_orig=cd(dir_log);
+    log_files=dir('output_write*.mat');
+    
+    idx_params=zeros(length(log_files),1);
+    shunt_params=cell(length(log_files),1);
+    
+    for ii=1:length(log_files)
+        [idx_params(ii),shunt_params{ii}]=get_params_from_log(log_files(ii).name);
+    end
+    
+    cd(dir_orig);
+else
+    warning('Parameter log directory \"%s\" cannot be found. Do not interpret params given by this script.',dir_log);
+    idx_params=NaN;
+    shunt_params=NaN;
 end
-
-cd(dir_orig);
 
 %% Summary
 %%ML summary
-hfig_ml=figure();
+%all costs
+cost_max_disp_all=100;       % cost for "bad" run
+hfig_ml_all=figure();
 hold on;
-scatter(file_id(cost<100),cost(cost<100),10,'o',...
+scatter(file_id(cost<cost_max_disp_all),cost(cost<cost_max_disp_all),10,'bo',...
+    'filled');   % plot all runs that aren't "bad"
+% scatter(file_id(cost<cost_max_disp_all),cost(cost<cost_max_disp_all),10,'go',...
+%     'filled');   % plot "bad" runs
+box on;
+titlestr='Machine learning for optimal trap shunting - all shots except bad';
+title(titlestr);
+xlabel('Iteration');
+ylabel('Cost function (m)');
+
+%low costs / good shots only
+cost_max_disp_good=100e-3;
+hfig_ml_lowcost=figure();
+hold on;
+scatter(file_id(cost<cost_max_disp_good),cost(cost<cost_max_disp_good),10,'o',...
     'filled');   % don't plot bad costs
 box on;
-titlestr='Machine learning for optimal trap shunting';
+titlestr=sprintf('Machine learning for optimal trap shunting - cost < %.3g m',cost_max_disp_good);
 title(titlestr);
 xlabel('Iteration');
 ylabel('Cost function (m)');
@@ -117,14 +144,31 @@ if file_id(best_id)~=1
     ylabel('Position (m)');
     axis tight;
     legend({'X','Y','Z'});
+    
+    %plot the profile
+    hfig_exp_profile=figure();
+    exp_profile=shunt_params{idx_params==1};
+    plot_shunt_profile(exp_profile,param_boundary,hfig_exp_profile);
+    
+    titlestr=sprintf('Exponential shunt');
+    title(titlestr);
+    xlabel('Profile segment');
+    ylabel('DAQ voltage (V)');
 end
 
-%plot the profile
-hfig_exp_profile=figure();
-exp_profile=shunt_params{idx_params==1};
-plot_shunt_profile(exp_profile,param_boundary,hfig_exp_profile);
+%% Save output
+%output directory
+if ~isdir(dir_output)
+    mkdir(dir_output);
+end
 
-titlestr=sprintf('Exponential shunt');
-title(titlestr);
-xlabel('Profile segment');
-ylabel('DAQ voltage (V)');
+%%Figures
+saveas(hfig_ml_all,[dir_output,'\','ml_progress_all.png']);       % ML progress - all costs except bad
+saveas(hfig_ml_lowcost,[dir_output,'\','ml_progress_good.png']);  % ML progress - low costs
+saveas(hfig_best,[dir_output,'\','best_oscillation.png']);        % best shot - oscillations
+saveas(hfig_best_profile,[dir_output,'\','best_profile.png']);    % best shot - shunt profile
+saveas(hfig_exp,[dir_output,'\','exp_oscillation.png']);          % exp benchmark - oscillations
+saveas(hfig_exp_profile,[dir_output,'\','exp_profile.png']);      % exp benchmark - shunt profile
+
+%%Data
+save([dir_output,'\','ml_summary_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat']);  %save all vars

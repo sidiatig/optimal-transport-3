@@ -2,8 +2,8 @@ function [cost_total,unc_total,bad,output,config_out] = cost_calculator(choice,s
 
 %Calculates the cost function for M-LOOP optimisation
 % Updated
-% 27/03/2017 - improved readability and update on cost function st all 3 dim var sum
-% 30/03/2017 - TODO: pass options as argument to increase modularity
+% 27-03-2017 - improved readability and update on cost function st all 3 dim var sum
+% 30-03-2017 - TODO: pass options as argument to increase modularity
 %            - fixed fft plotting - was plotting index vs amplitude
 %% INPUT
 %	choice: 'slosh'
@@ -175,6 +175,10 @@ switch choice
             bad = 'True';
             output=[];
             config_out=fopts;
+            
+%             %DEBUG - can improve PosAnal
+%             size(outval)
+%             disp('outerr || size of outval error');
             
         else
 			% parse output from pulse analysis code
