@@ -113,18 +113,13 @@ switch choice
         end
 		
 		% window params - atom pulse picking        
-%         xmin=-0.040;		% x lims (m)
-%         xmax=0.035;
-%         ymin=-0.015;		% y lims (m)
-%         ymax=0.020;
         xmin=fopts.xlim(1);
         xmax=fopts.xlim(2);
         ymin=fopts.ylim(1);
         ymax=fopts.ylim(2);
         
         % RF atom laser settings: (n_pulse more than a few thousand takes forever)
-%         t_0=1.9977;     	% DLD resolved time (s) for the first pulse to analyse
-        t_0=fopts.t_0;
+        t_0=fopts.t_0;      % DLD resolved time (s) for the first pulse to analyse
         dt=fopts.dt;
         n_pulse=fopts.n_pulse;
         
@@ -143,8 +138,7 @@ switch choice
         dw=dt;          % width of pulse picking window in time
         
 		% pass/fail
-% 		min_count=3000;	% minimum counts captured in analysis to pass
-        min_count=fopts.min_count;
+        min_count=fopts.min_count;      % minimum counts captured in analysis to pass
 
 		% misc
 		v_tof=9.81*0.416;	% z-velocity of atom at detection event
@@ -200,6 +194,8 @@ switch choice
                 unc_total = 100;
                 bad = 'True';
             else
+                output.numcounts=numcounts;
+                
                 %frequency value below which peaks are ignored (in kHz)
                 lower_freq_bound = 3;
                 
