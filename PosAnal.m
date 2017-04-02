@@ -15,6 +15,7 @@ path_log=strcat(dir_this,'\logs\','log_LabviewMatlab.txt');    % path of log fil
 %Start User Options
 %acceptable counts per file to still include as window
 numcut=10;
+min_count_low_file=1000;    % count threshold for lowcountfile categorisation
 %End User Options
 
 %this measures the position of a pulsed atom laser in x y t and plots a
@@ -28,12 +29,12 @@ ysd=NaN;
 tsd=NaN;
 numcounts=NaN;
 t_window_cen_int=NaN;
-out=[t_window_cen_int xavg yavg tavg xsd ysd tsd numcounts];
+% out=[t_window_cen_int xavg yavg tavg xsd ysd tsd numcounts];
     
 lowcountfiles=0;
 missingfiles=0;
 filestotxy=0;
-out=[];%this is a dynamic array but it prevents having to "clean" it at the end
+out=[];     %this is a dynamic array but it prevents having to "clean" it at the end
 
 if isverbose
     disp('importing data')
@@ -41,9 +42,7 @@ if isverbose
     tic
 end
 
-
 three_channel_multifile_output=cell(files);
-
 
 for n=1:files
     current_file_str = num2str(filenumstart+n-1);
@@ -65,8 +64,8 @@ for n=1:files
         % TXY-file exists
         three_channel_output=importdata([filepath,'_txy_forc',current_file_str,'.txt']);
     
-        if size(three_channel_output,1)<1000
-            %disp('selected shot has less than 2 counts')
+        if size(three_channel_output,1)<min_count_low_file
+            %warning('selected shot has less than %d counts',min_count_low_file);
             lowcountfiles=lowcountfiles+1;
         else
             three_channel_output_rot=zeros(size(three_channel_output));
@@ -94,7 +93,6 @@ if isverbose
     toc
 end
 
-
 three_channel_multifile_output= vertcat(three_channel_multifile_output{:});
 
 tic;    %time the masking
@@ -107,40 +105,41 @@ premask=0;
 if isverbose
     disp(['total counts :',int2str(size(three_channel_multifile_output,1))])
 end
-if ~(size(three_channel_multifile_output,1)<numcut)
-
-if all(windows(:,3)==windows(1,3))&&...
-    all(windows(:,4)==windows(1,4))&&...
-    all(windows(:,5)==windows(1,5))&&all(windows(:,6)==windows(1,6))
-    %spatial and temporal mask
-    premask=1;
-    premaskval=three_channel_multifile_output(:,2)>windows(1,3) &...
-        three_channel_multifile_output(:,2)<windows(1,4);
-    premaskval=premaskval &  three_channel_multifile_output(:,3)>windows(1,5) &...
-        three_channel_multifile_output(:,3)<windows(1,6);
-    premaskval=premaskval & three_channel_multifile_output(:,1)>min(windows(:,1)) &...
-        three_channel_multifile_output(:,1)<max(windows(:,2));
-    three_channel_multifile_output=three_channel_multifile_output(premaskval,:);
-else
-    premask=0;
-    %here i mask only by the min and max in the 3d(xyt) volume
-    %are therese two cases doing the same thing?
-    premaskval=three_channel_multifile_output(:,2)>min(windows(:,3)) &...
-        three_channel_multifile_output(:,2)<max(windows(:,4));
-    premaskval=premaskval &  three_channel_multifile_output(:,3)>min(windows(:,5)) &...
-        three_channel_multifile_output(:,3)<max(windows(:,6));
-    premaskval=premaskval & three_channel_multifile_output(:,1)>min(windows(:,1)) &...
-        three_channel_multifile_output(:,1)<max(windows(:,2));
-    three_channel_multifile_output=three_channel_multifile_output(premaskval,:);
-end
+if size(three_channel_multifile_output,1)>=numcut
+    % premask only files with counts at least numcut
+    if all(windows(:,3)==windows(1,3))&&...
+            all(windows(:,4)==windows(1,4))&&...
+            all(windows(:,5)==windows(1,5))&&all(windows(:,6)==windows(1,6))
+        %spatial and temporal mask
+        premask=1;
+        premaskval=three_channel_multifile_output(:,2)>windows(1,3) &...
+            three_channel_multifile_output(:,2)<windows(1,4);
+        premaskval=premaskval &  three_channel_multifile_output(:,3)>windows(1,5) &...
+            three_channel_multifile_output(:,3)<windows(1,6);
+        premaskval=premaskval & three_channel_multifile_output(:,1)>min(windows(:,1)) &...
+            three_channel_multifile_output(:,1)<max(windows(:,2));
+        three_channel_multifile_output=three_channel_multifile_output(premaskval,:);
+    else
+        premask=0;
+        %here i mask only by the min and max in the 3d(xyt) volume
+        %are therese two cases doing the same thing?
+        premaskval=three_channel_multifile_output(:,2)>min(windows(:,3)) &...
+            three_channel_multifile_output(:,2)<max(windows(:,4));
+        premaskval=premaskval &  three_channel_multifile_output(:,3)>min(windows(:,5)) &...
+            three_channel_multifile_output(:,3)<max(windows(:,6));
+        premaskval=premaskval & three_channel_multifile_output(:,1)>min(windows(:,1)) &...
+            three_channel_multifile_output(:,1)<max(windows(:,2));
+        three_channel_multifile_output=three_channel_multifile_output(premaskval,:);
+    end
 end
 if isverbose
-disp(['total count # after spatial window',...
-    num2str(size(three_channel_multifile_output,1))])
+    disp(['total count # after spatial window',...
+        num2str(size(three_channel_multifile_output,1))])
     disp('windowing data')
-    parfor_progress(size(windows,1)); 
+    parfor_progress(size(windows,1));
 end
-lowcountwindows=0; 
+
+lowcountwindows=0;
 t_window_cen=zeros(1,size(windows,1));
 %counts=cell(size(windows,1),1);
 for p=1:size(windows,1)
@@ -152,7 +151,8 @@ for p=1:size(windows,1)
     ymin=windows(p,5);
     ymax=windows(p,6);
     
-    if ~(size(three_channel_multifile_output,1)<numcut)
+    if size(three_channel_multifile_output,1)>=numcut
+        % window only files with counts at least numcut
         mask=three_channel_multifile_output(:,1)>tmin &...
             three_channel_multifile_output(:,1)<tmax;
         if premask==0 %doe this ever get called?
@@ -164,43 +164,52 @@ for p=1:size(windows,1)
         
         three_channel_output_rot_mask=three_channel_multifile_output(mask,:);
         
-        if size(three_channel_output_rot_mask,1)<numcut
+        numcounts=size(three_channel_output_rot_mask,1);    % number of counts captured in window
+        if numcounts<numcut
             if isverbose
-            disp('selected window has less than 1 counts')
+                warning('selected window has less than %d counts',numcut);
             end
             %plots=0;
             lowcountwindows=lowcountwindows+1;
+            
+            %all results about this window is set to NaN (except numcounts)
+            xavg=NaN;
+            yavg=NaN;
+            tavg=NaN;
+            xsd=NaN;
+            ysd=NaN;
+            tsd=NaN;
         else
             tavg=mean(three_channel_output_rot_mask(:,1));
             xavg=mean(three_channel_output_rot_mask(:,2));
             yavg=mean(three_channel_output_rot_mask(:,3));
-
+            
             tsd=std(three_channel_output_rot_mask(:,1));
             xsd=std(three_channel_output_rot_mask(:,2));
             ysd=std(three_channel_output_rot_mask(:,3));
-            numcounts=size(three_channel_output_rot_mask(:,3),1);
-
+%             numcounts=size(three_channel_output_rot_mask(:,3),1);
             
-            out=[out;[t_window_cen(p) xavg yavg tavg xsd ysd tsd numcounts]];
-   
+%             out=[out;[t_window_cen(p) xavg yavg tavg xsd ysd tsd numcounts]];
         end
+        
+        %build output vector
+        out=[out;[t_window_cen(p) xavg yavg tavg xsd ysd tsd numcounts]];
+        
     else
-       
+        
         %plots=0;
     end
-   
+    
+    %Plot results
     if plots
-       
         x_bin_centers_temp = linspace(xmin,xmax, 200);
         y_bin_centers_temp = linspace(ymin,ymax, 200);
-        [counts{p}, bin_centers] = hist3(three_channel_output_rot_mask(:,[2,3]),{x_bin_centers_temp, y_bin_centers_temp}); 
+        [counts{p}, bin_centers] = hist3(three_channel_output_rot_mask(:,[2,3]),{x_bin_centers_temp, y_bin_centers_temp});
         x_bin_centers(p,:) = bin_centers{1};
         y_bin_centers(p,:) = bin_centers{2};
-        
-        
     end
     if isverbose
-    parfor_progress;
+        parfor_progress;
     end
 end
 
@@ -260,7 +269,7 @@ end
 %out= out(keeplist,:)
 
 if isverbose
-disp('done with PosAnal')
+    disp('done with PosAnal')
 end
 
 %% Error check
@@ -270,10 +279,10 @@ if isempty(out)
     err=true; %what does this do?
     % log error message
     % % BUG
-% %     f_log=fopen(path_log,'a');  % append to log-file
-% %     fprintf(f_log,[datestr(datetime,'yyyymmdd_HHMMSS'),' PosAnal        : Error low counts. ',...
-% %         'path=%s, filenum=%d, files=%d, plots=%d, rot_angle=%d,\n'],filepath,filenumstart,files,plots,rot_angle);
-% %     fclose(f_log);
+    % %     f_log=fopen(path_log,'a');  % append to log-file
+    % %     fprintf(f_log,[datestr(datetime,'yyyymmdd_HHMMSS'),' PosAnal        : Error low counts. ',...
+    % %         'path=%s, filenum=%d, files=%d, plots=%d, rot_angle=%d,\n'],filepath,filenumstart,files,plots,rot_angle);
+    % %     fclose(f_log);
 end
 
 end
