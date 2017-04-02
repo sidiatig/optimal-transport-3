@@ -7,28 +7,31 @@
 
 %%configs
 %experiment specific
-dir_data='Y:\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\run6';    % data dir
+dir_data='Y:\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\run7';    % data dir
 dir_log=[dir_data,'\log'];          % dir for logs (currently output_write mat files)
 dir_output=[dir_data,'\output'];    % dir of output
 
 fopts.filepath=[dir_data,'\d'];     %filepath to data
-file_id=1:871;  % file ids to analyse
+file_id=1:1380;  % file ids to analyse
 
 fopts.xlim=[-40e-3, 35e-3];
 fopts.ylim=[-15e-3, 20e-3];
 
-fopts.t_0=2.6073;
+fopts.t_0=2.6075;
 
 fopts.dt=10e-3;
 fopts.n_pulse=110;
 
 %general flags
-fopts.min_count=1000;
+% fopts.min_count=1000;
+fopts.num_in_win=30;        % minimum counts per window (avgd) to pass number penalty
+fopts.min_window_pass=10;   % minimum good windows to pass for oscillation analysis
 
 fopts.log=false;
 fopts.graphics=false;
 
 %SHUNT BOUNDARIES
+% 6 Hz trap
 param_boundary=[3.4,0.14,0,0.87];   % shunt boundaries [Q_i,Q_f,Sh_i,Sh_f]
 
 %%main
