@@ -2,6 +2,8 @@ function[out,err,frames]= PosAnal(filepath,filenumstart,files,windows,plots,rot_
 %this function imports data,windows it and returns the avg pos data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT:
+% * out: NxM array: [t_window_cen, xavg, yavg, tavg, xsd, ysd, tsd,
+%                   numcounts]
 % * err: boolean flag triggered True when any error is encountered in
 % script detrimental to callers such as "cost_calculator.m"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
