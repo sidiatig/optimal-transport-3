@@ -3,7 +3,7 @@ function [cost_total,unc_total,bad,output,config_out] = cost_calculator(choice,s
 %Calculates the cost function for M-LOOP optimisation
 % Updated
 % 27-03-2017 - improved readability and update on cost function st all 3 dim var sum
-% 30-03-2017 - TODO: pass options as argument to increase modularity
+% 30-03-2017 - DONE[TODO]: pass options as argument to increase modularity
 %            - fixed fft plotting - was plotting index vs amplitude
 %% INPUT
 %	choice: 'slosh'
@@ -15,7 +15,6 @@ function [cost_total,unc_total,bad,output,config_out] = cost_calculator(choice,s
 %       t_0: first pulse time of arrival
 %       dt
 %       n_pulse
-%       min_count
 %       log: log to file
 %       graphics: do plots/figures/etc.
 %
@@ -31,6 +30,7 @@ function [cost_total,unc_total,bad,output,config_out] = cost_calculator(choice,s
 %   output: struct with fields
 %       osc: Nx3 array of X,Y,Z oscillations
 %       osc_std: standard deviation of trap oscillation; 1x3 array
+%       width: Nx3 array of pulse width (std)
 %       fft: 1x3 cell array of fft (fft format is Nx2 freq vs amplitude)
 %       trap_freq: trap frequency; 1x3 array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,7 +54,6 @@ switch choice
             fopts.t_0=1.9977;
             fopts.dt=5e-3;
             fopts.n_pulse=250;
-%             fopts.min_count=3000;
             fopts.log=true;
             fopts.graphics=true;
             fopts.num_win_penalty=30;
@@ -78,9 +77,6 @@ switch choice
             if ~isfield(fopts,'n_pulse')
                 fopts.n_pulse=250;
             end
-%             if ~isfield(fopts,'min_count')
-%                 fopts.min_count=3000;
-%             end
             if ~isfield(fopts,'log')
                 fopts.log=true;
             end
@@ -150,16 +146,13 @@ switch choice
 		% pass/fail
 %         min_count=fopts.min_count;      % minimum counts captured in analysis to pass
 
-		% misc
+		% misc params
 		v_tof=9.81*0.416;	% z-velocity of atom at detection event
 		dld_xy_rot=0.61;    % angle to rotate DLD XY coords
-        
-        %END User Controls
         
         %% slosh analysis
         %%initalize
         window=zeros(n_pulse,6);
-        xyzAvgSD=zeros(files,6);
         
         %create the windows
         for n=1:n_pulse
@@ -177,18 +170,17 @@ switch choice
             unc_total = 100;
             bad='True';
             output=[];
-            config_out=fopts;
             
 %             %DEBUG - can improve PosAnal
 %             size(outval)
 %             disp('outerr || size of outval error');
+
         elseif sum(~isnan(outval(:,2)))<min_window_pass
             % not enough good windows for oscillation analysis - penalise with large cost
             cost_total = 1;
             unc_total = 0.005;
             bad='False';
             output=[];
-            config_out=fopts;
             
         else
 			% parse output from pulse analysis code
@@ -207,7 +199,6 @@ switch choice
             %number of counts
             output.num_in_win=n_capt;
             output.numcounts=numcounts;
-            
             
             %frequency value below which peaks are ignored (in kHz)
             lower_freq_bound = 3;
@@ -280,7 +271,8 @@ switch choice
             uncz=uncz+0.05*costz;
             
             %% Get outputs
-            output.osc=[x_avg,y_avg,dz_avg];
+            output.osc=[x_avg,y_avg,dz_avg];        % avg position of pulsed atom laser - trap mode
+            output.width=[x_std,y_std,dz_std];      % width of pulsed atom laser - breathing mode
             output.fft={fftx_restricted,ffty_restricted,fftz_restricted};
             
             % get trap frequencies from fft
@@ -301,8 +293,14 @@ switch choice
                 unc_osc_total=0.05*cost_osc_total;
             end
             
-            %calculate new cost function
-            cost_total=cost_osc_total+penalty_num(output.num_in_win,n_pulse*num_win_penalty);   %penalty for low counts at detector
+            %%low number penalty
+            cost_penalty_lownum=penalty_num(output.num_in_win,n_pulse*num_win_penalty);
+            
+            %%thermal/dephasing penalty
+            %TODO
+            
+            %add penalties to cost
+            cost_total=cost_osc_total+cost_penalty_lownum;
             unc_total=unc_osc_total;
             
             bad = 'False';
