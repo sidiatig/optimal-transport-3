@@ -28,6 +28,7 @@ function [cost_total,unc_total,bad,output,config_out] = cost_calculator(choice,s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%slosh
 %   output: struct with fields
+%       t_cent: 1x3 array of window centre in TOF axis for sampled pulse
 %       osc: Nx3 array of X,Y,Z oscillations
 %       osc_std: standard deviation of trap oscillation; 1x3 array
 %       width: Nx3 array of pulse width (std)
@@ -271,6 +272,7 @@ switch choice
             uncz=uncz+0.05*costz;
             
             %% Get outputs
+            output.t_cent=t_cent;       % window "CENTRE" value in TOF axis
             output.osc=[x_avg,y_avg,dz_avg];        % avg position of pulsed atom laser - trap mode
             output.width=[x_std,y_std,dz_std];      % width of pulsed atom laser - breathing mode
             output.fft={fftx_restricted,ffty_restricted,fftz_restricted};
