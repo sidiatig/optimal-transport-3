@@ -301,13 +301,8 @@ switch choice
                 unc_osc_total=0.05*cost_osc_total;
             end
             
-            %penalty for low counts at detector
-            %number of counts
-            output.num_in_win=n_capt;
-            output.numcounts=numcounts;
-            
             %calculate new cost function
-            cost_total=cost_osc_total+penalty_num(output.num_in_win,n_pulse*num_win_penalty);
+            cost_total=cost_osc_total+penalty_num(output.num_in_win,n_pulse*num_win_penalty);   %penalty for low counts at detector
             unc_total=unc_osc_total;
             
             bad = 'False';
