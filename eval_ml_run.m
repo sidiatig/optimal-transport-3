@@ -173,7 +173,8 @@ end
 hfig_breathingmode=figure();
 hold on;
 %original cost
-scatter(file_id(cost<cost_max_disp_good),cost(cost<cost_max_disp_good),10,'o',...
+cost_max_disp_better=10e-3;
+scatter(file_id(cost<cost_max_disp_better),cost(cost<cost_max_disp_better),10,'o',...
     'filled');   % don't plot bad costs
 %breathing mode magnitude
 for jj=1:3
