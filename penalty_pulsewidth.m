@@ -21,7 +21,7 @@ end
 
 ndim=size(pulsewidth,2);    %number of dims supplied for pulse width
 
-pulsewidth_avg=mean(pulsewidth,1);      %get average pulse width in each dim [m]
+pulsewidth_avg=mean(pulsewidth,1,'omitnan');      %get average pulse width in each dim [m]
 
 val=pulsewidth_avg./saturation;         %normalised pulsewidths (dimless)
 
