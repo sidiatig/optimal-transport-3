@@ -129,23 +129,11 @@ switch choice
         n_pulse=fopts.n_pulse;
         num_win_penalty=fopts.num_win_penalty;
         min_window_pass=fopts.min_window_pass;
-        
-%         % 3ms/530 pulses
-%         dt=0.003;             % pulse-picking spacing in time (s)
-%         n_pulse=500;          % number of windows/pulses to pick out
-
-      % 5ms/318 pulse
-%         dt=0.0050;
-%         n_pulse=250;        
-        
-%         %10ms/120 pulses
-%         dt=0.010;
-%         n_pulse=110;        
-
         dw=dt;          % width of pulse picking window in time
-        
-		% pass/fail
-%         min_count=fopts.min_count;      % minimum counts captured in analysis to pass
+
+        %width penalty
+        width_sat=[8e-3,5e-3,6e-3];
+        penalty_width_sat=0.1;
 
 		% misc params
 		v_tof=9.81*0.416;	% z-velocity of atom at detection event
@@ -299,11 +287,11 @@ switch choice
             cost_penalty_lownum=penalty_num(output.num_in_win,n_pulse*num_win_penalty);
             
             %%thermal/dephasing penalty
-            %TODO
+            cost_penalty_pulsewidth=penalty_pulsewidth(output.width,width_sat,penalty_width_sat);
             
             %add penalties to cost
-            cost_total=cost_osc_total+cost_penalty_lownum;
-            unc_total=unc_osc_total;
+            cost_total=cost_osc_total+cost_penalty_lownum+cost_penalty_pulsewidth;
+            unc_total=1e-4;     %shot-to-shot noise in cost in std (<0.1(mm) for good shot)
             
             bad = 'False';
             
