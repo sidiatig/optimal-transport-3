@@ -7,15 +7,15 @@
 
 %%configs
 %experiment specific
-dir_data='Y:\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\run7';    % data dir
+dir_data='Y:\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\run10';    % data dir
 dir_log=[dir_data,'\log'];          % dir for logs (currently output_write mat files)
 dir_output=[dir_data,'\output'];    % dir of output
 
 fopts.filepath=[dir_data,'\d'];     %filepath to data
-file_id=1:1380;  % file ids to analyse
+file_id=1:1400;  % file ids to analyse
 
-fopts.xlim=[-40e-3, 35e-3];
-fopts.ylim=[-15e-3, 20e-3];
+fopts.xlim=[-35e-3, 20e-3];
+fopts.ylim=[-10e-3, 18e-3];
 
 fopts.t_0=2.6075;
 
@@ -159,6 +159,34 @@ if file_id(best_id)~=1
     ylabel('DAQ voltage (V)');
 end
 
+%% Breathing mode
+%evaluate breathing mode
+bec_width_rms=zeros(n_shots,3);
+for ii=1:n_shots
+    if ~isempty(output{ii})
+        %breathing mode magnitude as rms of pulse width (std)
+        bec_width_rms(ii,:)=std(output{ii}.width,1);
+    else
+        bec_width_rms(ii,:)=nan;
+    end
+end
+hfig_breathingmode=figure();
+hold on;
+%original cost
+scatter(file_id(cost<cost_max_disp_good),cost(cost<cost_max_disp_good),10,'o',...
+    'filled');   % don't plot bad costs
+%breathing mode magnitude
+for jj=1:3
+    scatter(1:n_shots,bec_width_rms(:,jj),10,'^','filled');   %breathing mode in each axis
+end
+box on;
+titlestr=sprintf('Cost function and breathing mode');
+title(titlestr);
+xlabel('Iteration');
+ylabel('Cost function (m)');
+legend({'original cost','\Delta\sigma_X','\Delta\sigma_Y','\Delta\sigma_Z'});
+
+
 %% Save output
 %output directory
 if ~isdir(dir_output)
@@ -172,6 +200,8 @@ saveas(hfig_best,[dir_output,'\','best_oscillation.png']);        % best shot - 
 saveas(hfig_best_profile,[dir_output,'\','best_profile.png']);    % best shot - shunt profile
 saveas(hfig_exp,[dir_output,'\','exp_oscillation.png']);          % exp benchmark - oscillations
 saveas(hfig_exp_profile,[dir_output,'\','exp_profile.png']);      % exp benchmark - shunt profile
+
+saveas(hfig_breathingmode,[dir_output,'\','breathing_mode.png']); % breathing mode
 
 %%Data
 save([dir_output,'\','ml_summary_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat']);  %save all vars
