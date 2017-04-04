@@ -295,6 +295,11 @@ switch choice
             
             bad = 'False';
             
+%             %SUMMARY
+%             cost_message=sprintf('cost_osc_total=%.3g\n cost_penalty_lownum=%.3g\n cost_penalty_pulsewidth=%.3g\n cost_total=%.3g\n',...
+%                 cost_osc_total,cost_penalty_lownum,cost_penalty_pulsewidth,cost_total);
+%             disp(cost_message);
+            
             %% Plot: Fourier transform
             if fopts.graphics
                 figure(1);
