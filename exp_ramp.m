@@ -10,5 +10,6 @@ K=(ntau/n_interp);    % ~3 time constants to reach xf
 n_i=1:n_interp;
 ramp=xi+(xf-xi)*(1-exp(-K*n_i));
 
-figure();
-plot([xi,ramp,xf]);
+% % plot
+% figure();
+% plot([xi,ramp,xf]);
