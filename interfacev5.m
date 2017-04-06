@@ -171,8 +171,8 @@ if i==1 && ~mloop && control
     %save params set and configs to disk
     %param_data is crucial since it is called every iteration by a new instance of interface script
     %but the permutation and ordering should remain fixed for current analysis
-    filename_param_log=['param_data_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat'];
-    save(filename_param_log,'param_values','ntau_perm',...
+%     filename_param_log=['param_data_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat'];
+    save('param_data.mat','param_values','ntau_perm',...
         'ntau_lim','n_search','n_shot_avg','n_interp','Vquad_boundary','Vshunt_boundary');
 end
 
