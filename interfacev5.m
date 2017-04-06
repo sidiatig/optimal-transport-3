@@ -148,7 +148,7 @@ if i==1 && ~mloop && control
     Vshunt_boundary=[0,0.87];
     
     ntau_lim=[2,10];        %param lims - number of exponential constants
-    n_search=40;            %interp points in lim to search for param
+    n_search=17;            %interp points in lim to search for param
     n_shot_avg=1;          %number of shots to take per param set
     n_interp=7;             %14[7/7] param shunt
     ntau=linspace(ntau_lim(1),ntau_lim(2),n_search);    %single-dim param in linear space
@@ -156,7 +156,7 @@ if i==1 && ~mloop && control
     %create all permutations of param_values for experiment
     ntau_perm=transpose(combvec(ntau,ntau));
     ntau_perm=repmat(ntau_perm,[n_shot_avg,1]);         %averaging shots
-    ntau_perm=ntau_perm(random(size(ntau_perm,1)),:);   %randomise the ntau
+    ntau_perm=ntau_perm(randperm(size(ntau_perm,1)),:);   %randomise the ntau
     
     %build param_values
     n_total_perm=size(ntau_perm,1);
