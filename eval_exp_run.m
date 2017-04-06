@@ -63,61 +63,71 @@ PARAMLOG=load([dir_log,'/param_data.mat']);
 param_values=PARAMLOG.param_values;
 n_par_set=size(param_values,1);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%TODO - we suffer here since I forgot to save ntaus with the params
-Vquad_0=3.4;        %initial set point
-Vquad_inf=0.14;     %asymptotic values of exponential ramp (boundary condition)
-Vshunt_0=0;
-Vshunt_inf=0.87;
-
-ntau_array=zeros(n_par_set,2);   %ntau to calculate
-for ii=1:n_par_set
-    %get profile
-    Vquad_this=param_values(ii,1:7);
-    Vshunt_this=param_values(ii,8:end);
+if isfield(PARAMLOG,'ntau_perm')
+ntau=PARAMLOG.ntau_perm;
+else
+    % we suffer here since I forgot to save ntaus with the params for first
+    % run
+    Vquad_0=param_boundary(1);          %initial set point
+    Vquad_inf=param_boundary(2);        %asymptotic values of exponential ramp (boundary condition)
+    Vshunt_0=param_boundary(3);
+    Vshunt_inf=param_boundary(4);
     
-    %%get number of exp constants decayed
-    %quad
-    logv_temp=log(Vquad_this-Vquad_inf);
-    ntau_array(ii,1)=log(Vquad_0-Vquad_inf)-logv_temp(end);
-    
-    %shunt
-    logv_temp=log(Vshunt_inf-Vshunt_this);
-    ntau_array(ii,2)=log(Vshunt_inf-Vshunt_0)-logv_temp(end);
+    ntau=zeros(n_par_set,2);   %ntau to calculate
+    for ii=1:n_par_set
+        %get profile
+        Vquad_this=param_values(ii,1:7);
+        Vshunt_this=param_values(ii,8:end);
+        
+        %%get number of exp constants decayed
+        %quad
+        logv_temp=log(Vquad_this-Vquad_inf);
+        ntau(ii,1)=log(Vquad_0-Vquad_inf)-logv_temp(end);
+        
+        %shunt
+        logv_temp=log(Vshunt_inf-Vshunt_this);
+        ntau(ii,2)=log(Vshunt_inf-Vshunt_0)-logv_temp(end);
+    end
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %% Summary
+n_interp=40;    %for create grid data for cost lanscape/mesh plotting
+
 %%EXP Summary
 %all costs
-cost_max_disp_all=100;       % cost for "bad" run
-id_except_bad=file_id(cost<cost_max_disp_all);
-hfig_exp_all=figure();
+cost_not_bad=100;       % cost for "bad" run
+id_except_bad=file_id(cost<cost_not_bad);
+[NTAU1q,NTAU2q,COST]=array2mesh(ntau(id_except_bad,1),ntau(id_except_bad,2),cost(id_except_bad),n_interp);
+
+hfig_exp_not_bad=figure();
 hold on;
-scatter3(ntau_array(id_except_bad,1),ntau_array(id_except_bad,2),cost(id_except_bad),10,'bo',...
-    'filled');   % plot all runs that aren't "bad"
-% scatter(file_id(cost<cost_max_disp_all),cost(cost<cost_max_disp_all),10,'go',...
-%     'filled');   % plot "bad" runs
+surf(NTAU1q,NTAU2q,COST);
+shading interp;
+scatter3(ntau(id_except_bad,1),ntau(id_except_bad,2),cost(id_except_bad),10,'o','filled');
 box on;
+axis tight;
 titlestr='EXP: all shots except bad';
 title(titlestr);
-xlabel('NTAU1');
-ylabel('NTAU2');
+xlabel('$T/\tau_{Q}$');
+ylabel('$T/\tau_{S}$');
 zlabel('Cost (m)');
 view(3);
 
 %low costs / good shots only
-cost_max_disp_good=100e-3;
-id_good=file_id(cost<cost_max_disp_good);
+cost_good=30e-3;
+id_good=file_id(cost<cost_good);
+[NTAU1q_good,NTAU2q_good,COST_good]=array2mesh(ntau(id_good,1),ntau(id_good,2),cost(id_good),n_interp);
+
 hfig_exp_lowcost=figure();
 hold on;
-scatter3(ntau_array(id_good,1),ntau_array(id_good,2),cost(id_good),10,'bo',...
-    'filled');   % plot all runs that aren't "bad"
+surf(NTAU1q_good,NTAU2q_good,COST_good);
+shading interp;
+scatter3(ntau(id_good,1),ntau(id_good,2),cost(id_good),10,'o','filled');
 box on;
-titlestr=sprintf('EXP - cost < %.3g m',cost_max_disp_good);
+axis tight;
+titlestr=sprintf('EXP: cost$<$%0.3g m',cost_good);
 title(titlestr);
-xlabel('NTAU1');
-ylabel('NTAU2');
+xlabel('$T/\tau_{Q}$');
+ylabel('$T/\tau_{S}$');
 zlabel('Cost (m)');
 view(3);
 
@@ -126,7 +136,7 @@ view(3);
 best_osc_std=output{best_id}.osc_std;
 best_osc=output{best_id}.osc;
 
-best_ntau=ntau_array(best_id,:);
+best_ntau=ntau(best_id,:);
 
 hfig_best=figure();
 hold on;
@@ -135,7 +145,7 @@ for ii=1:3
         'Linewidth',1.5);
 end
 box on;
-titlestr=sprintf('Best EXP shunt: ntau=[%0.3g,%0.3g]',best_ntau(1),best_ntau(2));
+titlestr=sprintf('Best EXP [%d]: $T/\\tau$=[%0.3g,%0.3g]',best_id,best_ntau(1),best_ntau(2));
 title(titlestr);
 xlabel('Time (s)');
 ylabel('Position (m)');
@@ -146,41 +156,12 @@ legend({'X','Y','Z'});
 hfig_best_profile=figure();
 best_profile=param_values(best_id,:);
 plot_shunt_profile(best_profile,param_boundary,hfig_best_profile);
-
-titlestr=sprintf('Best EXP shunt: ntau=[%0.3g,%0.3g]',best_ntau(1),best_ntau(2));
+box on;
+titlestr=sprintf('Best EXP [%d]: $T/\\tau$=[%0.3g,%0.3g]',best_id,best_ntau(1),best_ntau(2));
 title(titlestr);
 xlabel('Profile segment');
 ylabel('DAQ voltage (V)');
- 
-% %% Breathing mode
-% %evaluate breathing mode
-% bec_width_rms=zeros(n_shots,3);
-% for ii=1:n_shots
-%     if ~isempty(output{ii})
-%         %breathing mode magnitude as rms of pulse width (std)
-%         bec_width_rms(ii,:)=std(output{ii}.width,1);
-%     else
-%         bec_width_rms(ii,:)=nan;
-%     end
-% end
-% hfig_breathingmode=figure();
-% hold on;
-% %original cost
-% cost_max_disp_better=10e-3;
-% scatter(file_id(cost<cost_max_disp_better),cost(cost<cost_max_disp_better),10,'o',...
-%     'filled');   % don't plot bad costs
-% %breathing mode magnitude
-% for jj=1:3
-%     scatter(1:n_shots,bec_width_rms(:,jj),10,'^','filled');   %breathing mode in each axis
-% end
-% box on;
-% titlestr=sprintf('Cost function and breathing mode');
-% title(titlestr);
-% xlabel('Iteration');
-% ylabel('Cost function (m)');
-% legend({'original cost','\Delta\sigma_X','\Delta\sigma_Y','\Delta\sigma_Z'});
-% 
-% 
+
 %% Save output
 %output directory
 if ~isdir(dir_output)
@@ -188,12 +169,10 @@ if ~isdir(dir_output)
 end
 
 %%Figures
-saveas(hfig_exp_all,[dir_output,'\','ml_progress_all.png']);       % ML progress - all costs except bad
+saveas(hfig_exp_not_bad,[dir_output,'\','ml_progress_not_bad.png']);       % ML progress - all costs except bad
 saveas(hfig_exp_lowcost,[dir_output,'\','ml_progress_good.png']);  % ML progress - low costs
 saveas(hfig_best,[dir_output,'\','best_oscillation.png']);        % best shot - oscillations
 saveas(hfig_best_profile,[dir_output,'\','best_profile.png']);    % best shot - shunt profile
-
-% saveas(hfig_breathingmode,[dir_output,'\','breathing_mode.png']); % breathing mode
 
 %%Data
 save([dir_output,'\','ml_summary_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat']);  %save all vars
