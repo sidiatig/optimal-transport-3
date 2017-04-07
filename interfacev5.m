@@ -147,8 +147,8 @@ if i==1 && ~mloop && control
     Vquad_boundary=[3.4,0.14];
     Vshunt_boundary=[0,0.87];
     
-    ntau_lim=[2,10];        %param lims - number of exponential constants
-    n_search=17;            %interp points in lim to search for param
+    ntau_lim=[1,10];        %param lims - number of exponential constants
+    n_search=20;            %interp points in lim to search for param
     n_shot_avg=1;          %number of shots to take per param set
     n_interp=7;             %14[7/7] param shunt
     ntau=linspace(ntau_lim(1),ntau_lim(2),n_search);    %single-dim param in linear space
@@ -171,8 +171,12 @@ if i==1 && ~mloop && control
     %save params set and configs to disk
     %param_data is crucial since it is called every iteration by a new instance of interface script
     %but the permutation and ordering should remain fixed for current analysis
-%     filename_param_log=['param_data_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat'];
     save('param_data.mat','param_values','ntau_perm',...
+        'ntau_lim','n_search','n_shot_avg','n_interp','Vquad_boundary','Vshunt_boundary');
+    
+    %save for archive purposes
+    filename_param_log=['logs/param_data_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat'];
+    save(filename_param_log,'param_values','ntau_perm',...
         'ntau_lim','n_search','n_shot_avg','n_interp','Vquad_boundary','Vshunt_boundary');
 end
 
