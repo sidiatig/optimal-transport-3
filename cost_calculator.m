@@ -127,14 +127,15 @@ switch choice
         t_0=fopts.t_0;      % DLD resolved time (s) for the first pulse to analyse
         dt=fopts.dt;
         n_pulse=fopts.n_pulse;
-        num_win_penalty=fopts.num_win_penalty;
+        num_win_penalty=fopts.num_win_penalty;      %set to [] to turn number penalty OFF
         min_window_pass=fopts.min_window_pass;
         dw=dt;          % width of pulse picking window in time
 
         %width penalty
         width_sat=[8e-3,5e-3,6e-3];
-        penalty_width_sat=0.1;
-
+        penalty_width_sat=0.1;      %set to [] to turn penalty OFF
+%         penalty_width_sat=[];      %set to [] to turn penalty OFF
+        
 		% misc params
 		v_tof=9.81*0.416;	% z-velocity of atom at detection event
 		dld_xy_rot=0.61;    % angle to rotate DLD XY coords
@@ -284,10 +285,18 @@ switch choice
             end
             
             %%low number penalty
-            cost_penalty_lownum=penalty_num(output.num_in_win,n_pulse*num_win_penalty);
+            if isempty(num_win_penalty)
+                cost_penalty_lownum=0;
+            else
+                cost_penalty_lownum=penalty_num(output.num_in_win,n_pulse*num_win_penalty);
+            end
             
             %%thermal/dephasing penalty
-            cost_penalty_pulsewidth=penalty_pulsewidth(output.width,width_sat,penalty_width_sat);
+            if isempty(penalty_width_sat)
+                cost_penalty_pulsewidth=0;
+            else
+                cost_penalty_pulsewidth=penalty_pulsewidth(output.width,width_sat,penalty_width_sat);
+            end
             
             %add penalties to cost
             cost_total=cost_osc_total+cost_penalty_lownum+cost_penalty_pulsewidth;
