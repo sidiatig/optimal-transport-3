@@ -100,9 +100,12 @@ id_except_bad=file_id(cost<cost_not_bad);
 
 hfig_exp_not_bad=figure();
 hold on;
-surf(NTAU1q,NTAU2q,COST);
+im_not_bad=surf(NTAU1q,NTAU2q,COST,...
+    'CDataMapping','scaled','LineStyle','none');
 shading interp;
+colormap(hfig_exp_not_bad,viridis);
 scatter3(ntau(id_except_bad,1),ntau(id_except_bad,2),cost(id_except_bad),10,'o','filled');
+colorbar;
 box on;
 axis tight;
 titlestr='EXP: all shots except bad';
@@ -117,11 +120,14 @@ cost_good=30e-3;
 id_good=file_id(cost<cost_good);
 [NTAU1q_good,NTAU2q_good,COST_good]=array2mesh(ntau(id_good,1),ntau(id_good,2),cost(id_good),n_interp);
 
-hfig_exp_lowcost=figure();
+hfig_exp_good=figure();
 hold on;
-surf(NTAU1q_good,NTAU2q_good,COST_good);
+im_good=surf(NTAU1q_good,NTAU2q_good,COST_good,...
+    'CDataMapping','scaled','LineStyle','none');
 shading interp;
+colormap(hfig_exp_good,viridis);
 scatter3(ntau(id_good,1),ntau(id_good,2),cost(id_good),10,'o','filled');
+colorbar;
 box on;
 axis tight;
 titlestr=sprintf('EXP: cost$<$%0.3g m',cost_good);
@@ -170,7 +176,7 @@ end
 
 %%Figures
 saveas(hfig_exp_not_bad,[dir_output,'\','ml_progress_not_bad.png']);       % ML progress - all costs except bad
-saveas(hfig_exp_lowcost,[dir_output,'\','ml_progress_good.png']);  % ML progress - low costs
+saveas(hfig_exp_good,[dir_output,'\','ml_progress_good.png']);  % ML progress - low costs
 saveas(hfig_best,[dir_output,'\','best_oscillation.png']);        % best shot - oscillations
 saveas(hfig_best_profile,[dir_output,'\','best_profile.png']);    % best shot - shunt profile
 
