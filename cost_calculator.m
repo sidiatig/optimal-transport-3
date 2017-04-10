@@ -1,5 +1,5 @@
 function [cost_total,unc_total,bad,output,config_out] = cost_calculator(choice,startfile,fopts)
-
+% [C,U,B,O,CF]=cost_calculator('slosh',1,FOPTS)
 %Calculates the cost function for M-LOOP optimisation
 % Updated
 % 27-03-2017 - improved readability and update on cost function st all 3 dim var sum

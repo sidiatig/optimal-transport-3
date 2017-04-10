@@ -6,20 +6,20 @@
 
 %%Configs
 %experiment specific
-dir_data='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\exp_shunt\0_5s';    % data dir
+% data dir
+dir_data='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\exp_shunt\0_25s_20x20';
 dir_log=[dir_data,'\log'];          % dir for logs (currently output_write mat files)
 dir_output=[dir_data,'\output'];    % dir of output
 
 fopts.filepath=[dir_data,'\d'];     %filepath to data
-file_id=1:1600;  % file ids to analyse
+file_id=1:400;  % file ids to analyse
 
 fopts.xlim=[-35e-3, 20e-3];
 fopts.ylim=[-10e-3, 18e-3];
 
-fopts.t_0=1.1074;
-
 fopts.dt=10e-3;
-fopts.n_pulse=280;
+fopts.t_0=0.80743;
+fopts.n_pulse=310;
 
 %general flags
 % fopts.min_count=1000;
@@ -42,7 +42,8 @@ bad=cell(n_shots,1);
 output=cell(n_shots,1);
 config=cell(n_shots,1);
 
-for ii=1:n_shots
+parfor ii=1:n_shots
+% for ii=1:n_shots
     [cost(ii),cost_unc(ii),bad{ii},output{ii},config{ii}]=cost_calculator('slosh',file_id(ii),fopts);
     progress_message=sprintf('%d/%d Complete',ii,n_shots);
     disp(progress_message);
@@ -113,7 +114,7 @@ title(titlestr);
 xlabel('$T/\tau_{Q}$');
 ylabel('$T/\tau_{S}$');
 zlabel('Cost (m)');
-view(3);
+view(2);
 
 %low costs / good shots only
 cost_good=30e-3;
@@ -135,7 +136,29 @@ title(titlestr);
 xlabel('$T/\tau_{Q}$');
 ylabel('$T/\tau_{S}$');
 zlabel('Cost (m)');
-view(3);
+view(2);
+
+%very good shots
+cost_vgood=10e-3;
+id_vgood=file_id(cost<cost_vgood);
+[NTAU1q_vgood,NTAU2q_vgood,COST_vgood]=array2mesh(ntau(id_vgood,1),ntau(id_vgood,2),cost(id_vgood),n_interp);
+
+hfig_exp_vgood=figure();
+hold on;
+im_vgood=surf(NTAU1q_vgood,NTAU2q_vgood,COST_vgood,...
+    'CDataMapping','scaled','LineStyle','none');
+shading interp;
+colormap(hfig_exp_vgood,viridis);
+scatter3(ntau(id_vgood,1),ntau(id_vgood,2),cost(id_vgood),10,'o','filled');
+colorbar;
+box on;
+axis tight;
+titlestr=sprintf('EXP: cost$<$%0.3g m',cost_vgood);
+title(titlestr);
+xlabel('$T/\tau_{Q}$');
+ylabel('$T/\tau_{S}$');
+zlabel('Cost (m)');
+view(2);
 
 %%report on BEST file
 [best_cost,best_id]=min(cost);
@@ -151,7 +174,7 @@ for ii=1:3
         'Linewidth',1.5);
 end
 box on;
-titlestr=sprintf('Best EXP [%d]: $T/\\tau$=[%0.3g,%0.3g]',best_id,best_ntau(1),best_ntau(2));
+titlestr=sprintf('Best EXP [%d]: $T/\\tau$=[%0.3g,%0.3g]: cost=%0.3g',best_id,best_ntau(1),best_ntau(2),best_cost);
 title(titlestr);
 xlabel('Time (s)');
 ylabel('Position (m)');
@@ -163,10 +186,28 @@ hfig_best_profile=figure();
 best_profile=param_values(best_id,:);
 plot_shunt_profile(best_profile,param_boundary,hfig_best_profile);
 box on;
-titlestr=sprintf('Best EXP [%d]: $T/\\tau$=[%0.3g,%0.3g]',best_id,best_ntau(1),best_ntau(2));
+titlestr=sprintf('Best EXP [%d]: $T/\\tau$=[%0.3g,%0.3g]: cost=%0.3g',best_id,best_ntau(1),best_ntau(2),best_cost);
 title(titlestr);
 xlabel('Profile segment');
 ylabel('DAQ voltage (V)');
+
+%%Breathing mode
+%best only
+best_width=output{best_id}.width;
+
+hfig_best_breathing=figure();
+hold on;
+for ii=1:3
+    plot(t,best_width(:,ii),...
+        'LineWidth',1.5);
+end
+box on;
+titlestr=sprintf('Best EXP [%d]: $T/\\tau$=[%0.3g,%0.3g]: cost=%0.3g',best_id,best_ntau(1),best_ntau(2),best_cost);
+title(titlestr);
+xlabel('Time (s)');
+ylabel('PAL rms width (m)');
+axis tight;
+legend({'X','Y','Z'});
 
 %% Save output
 %output directory
@@ -174,11 +215,21 @@ if ~isdir(dir_output)
     mkdir(dir_output);
 end
 
-%%Figures
+%%Figures PNG
 saveas(hfig_exp_not_bad,[dir_output,'\','ml_progress_not_bad.png']);       % ML progress - all costs except bad
 saveas(hfig_exp_good,[dir_output,'\','ml_progress_good.png']);  % ML progress - low costs
+saveas(hfig_exp_vgood,[dir_output,'\','ml_progress_vgood.png']);  % ML progress - very low cost
 saveas(hfig_best,[dir_output,'\','best_oscillation.png']);        % best shot - oscillations
 saveas(hfig_best_profile,[dir_output,'\','best_profile.png']);    % best shot - shunt profile
+saveas(hfig_best_breathing,[dir_output,'\','best_breathing.png']);  	% best shot - rms width oscillation
+
+%%Figures .fig
+saveas(hfig_exp_not_bad,[dir_output,'\','ml_progress_not_bad.fig']);       % ML progress - all costs except bad
+saveas(hfig_exp_good,[dir_output,'\','ml_progress_good.fig']);  % ML progress - low costs
+saveas(hfig_exp_vgood,[dir_output,'\','ml_progress_vgood.fig']);  % ML progress - very low cost
+saveas(hfig_best,[dir_output,'\','best_oscillation.fig']);        % best shot - oscillations
+saveas(hfig_best_profile,[dir_output,'\','best_profile.fig']);    % best shot - shunt profile
+saveas(hfig_best_breathing,[dir_output,'\','best_breathing.fig']);  	% best shot - rms width oscillation
 
 %%Data
 save([dir_output,'\','ml_summary_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat']);  %save all vars
