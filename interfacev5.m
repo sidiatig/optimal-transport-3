@@ -258,7 +258,7 @@ if mloop
     param=str2num(line(14:end-1));    %param array parsed from exp_input.txt
     
     %%evaluate shunt profiles
-    if ~isexist('optimiser_type','var')
+    if ~exist('optimiser_type','var')
         %default is all segment search
         optimiser_type='all';
     end
