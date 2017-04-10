@@ -57,8 +57,11 @@ switch choice
             fopts.n_pulse=250;
             fopts.log=true;
             fopts.graphics=true;
-            fopts.num_win_penalty=30;
-            fopts.min_window_pass=10;
+            fopts.num_win_penalty=[];
+            fopts.win_capture_rate=0;
+            fopts.pkpk_penalty=false;
+            fopts.width_sat=[8e-3,5e-3,6e-3];
+            fopts.penalty_width_sat=[];
         else % missing fields in fopts
             if ~isfield(fopts,'filepath')
                 fopts.filepath='Y:\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\d';
@@ -85,16 +88,24 @@ switch choice
                 fopts.graphics=true;
             end
             if ~isfield(fopts,'num_win_penalty')
-                fopts.num_win_penalty=30;
+                fopts.num_win_penalty=[];
             end
-            if ~isfield(fopts,'min_window_pass')
-                fopts.min_window_pass=10;
+            if ~isfield(fopts,'win_capture_rate')
+                fopts.win_capture_rate=0;
+            end
+            if ~isfield(fopts,'pkpk_penalty')
+                fopts.pkpk_penalty=false;
+            end
+            if ~isfield(fopts,'penalty_width_sat')
+                fopts.penalty_width_sat=[];
+            end
+            if ~isfield(fopts,'width_sat')
+                fopts.width_sat=[8e-3,5e-3,6e-3];
             end
         end
         
         %% START User Controls
 		% NOTE: tweak this code for different profile/sequences
-        files=1;
         %DLD OUTPUT
 		filepath=fopts.filepath;
         check=0;
@@ -128,13 +139,13 @@ switch choice
         dt=fopts.dt;
         n_pulse=fopts.n_pulse;
         num_win_penalty=fopts.num_win_penalty;      %set to [] to turn number penalty OFF
-        min_window_pass=fopts.min_window_pass;
+        win_capture_rate=fopts.win_capture_rate;
         dw=dt;          % width of pulse picking window in time
 
-        %width penalty
-        width_sat=[8e-3,5e-3,6e-3];
-        penalty_width_sat=0.1;      %set to [] to turn penalty OFF
-%         penalty_width_sat=[];      %set to [] to turn penalty OFF
+%         %width penalty
+%         width_sat=[8e-3,5e-3,6e-3];
+%         penalty_width_sat=0.1;      %set to [] to turn penalty OFF
+% %         penalty_width_sat=[];      %set to [] to turn penalty OFF
         
 		% misc params
 		v_tof=9.81*0.416;	% z-velocity of atom at detection event
@@ -152,24 +163,21 @@ switch choice
         end
         
         if ~outerr
-            [outval,outerr]=PosAnal(filepath,startfile,files,window,false,dld_xy_rot,false);
+            [outval,outerr]=PosAnalyser(filepath,startfile,1,window,false,dld_xy_rot,false);
         end
         
         if outerr
+            %error in PosAnal call
             cost_total = 100;
-            unc_total = 100;
+            unc_total = 0;
             bad='True';
             output=[];
-            
-%             %DEBUG - can improve PosAnal
-%             size(outval)
-%             disp('outerr || size of outval error');
 
-        elseif sum(~isnan(outval(:,2)))<min_window_pass
-            % not enough good windows for oscillation analysis - penalise with large cost
-            cost_total = 1;
-            unc_total = 0.005;
-            bad='False';
+        elseif sum(~isnan(outval(:,2)))<win_capture_rate*n_pulse
+            %not enough good windows for oscillation analysis
+            cost_total = 100;
+            unc_total = 0;
+            bad='True';
             output=[];
             
         else
@@ -205,14 +213,14 @@ switch choice
             % Calculate cost factor from X
             output.osc_std(1)=std(x_avg,'omitnan');   % get oscillation
             costx=output.osc_std(1);
-            %costx=max(fftx_restricted(:,2));
             
-            penalty_x=penalty_pkpk(x_avg,0.9*(xmax-xmin));
+            if fopts.pkpk_penalty
+                penalty_x=penalty_pkpk(x_avg,0.9*(xmax-xmin));
+            else
+                penalty_x=0;
+            end
             costx=costx+penalty_x;
             
-            % See standard amplitude uncert in fft is sqrt(sum(unc(x_n)^2))/sqrt(num_points) https://stackoverflow.com/questions/27529166/calculate-uncertainty-in-fft-amplitude
-            
-            %uncx = costx*mean(1./outval(:,2).*outval(:,5)./sqrt(outval(:,8)));
             uncx = sqrt(sum((x_std./sqrt(n_capt)).^2,'omitnan'))/numpulses;
             uncx=uncx+0.05*costx;
             
@@ -225,14 +233,15 @@ switch choice
             
             % Calculate cost factor from Y
             output.osc_std(2)=std(y_avg,'omitnan');   % get oscillation
-            %costy=std(y_avg)*sqrt(2); 	% TODO why is Y-axis oscillation divided by sqrt 2?
             costy=output.osc_std(2);
-            %costy=max(ffty_restricted);
             
-            penalty_y=penalty_pkpk(y_avg,0.9*(ymax-ymin));
+            if fopts.pkpk_penalty
+                penalty_y=penalty_pkpk(y_avg,0.9*(ymax-ymin));
+            else
+                penalty_y=0;
+            end
             costy=costy+penalty_y;
             
-            %uncy = costy*mean(1./outval(:,3).*outval(:,6)./sqrt(outval(:,8)));
             uncy = sqrt(sum((y_std./sqrt(n_capt)).^2,'omitnan'))/numpulses;
             uncy=uncy+0.05*costy;
             
@@ -253,8 +262,11 @@ switch choice
             output.osc_std(3)=std(dz_avg,'omitnan');   % get oscillation
             costz=output.osc_std(3);	% cost measure from dZ
             
-            penalty_z=penalty_pkpk(dz_avg,0.95*dw*v_tof);
-            
+            if fopts.pkpk_penalty
+                penalty_z=penalty_pkpk(dz_avg,0.95*dw*v_tof);
+            else
+                penalty_z=0;
+            end
             costz=costz+penalty_z;
             
             uncz = sqrt(sum((dz_std./sqrt(n_capt)).^2,'omitnan'))/numpulses;
@@ -410,7 +422,7 @@ switch choice
     % Any other cost-function than trap oscillations    
     otherwise
         cost_total = 100;
-        unc_total = 100;
+        unc_total = 0;
         bad = 'True';
         
 end %switch analysis
