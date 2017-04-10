@@ -24,14 +24,14 @@ ii=0:(n_interp+1);  %including start and end points
 
 y_interp=C*exp(-ii*n_tau/(n_interp+1))+C0;
 
-%plot
-figure();
-hold on;
-scatter([0,n_interp+1],y,...
-    'bo','filled');
-plot(ii,y_interp,...
-    'r^--');
-box on; grid on;
+% %plot
+% figure();
+% hold on;
+% scatter([0,n_interp+1],y,...
+%     'bo','filled');
+% plot(ii,y_interp,...
+%     'r^--');
+% box on; grid on;
 
 y_interp=y_interp(2:end-1); %return the interp pts only (ends excluded)
 end
