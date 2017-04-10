@@ -18,12 +18,19 @@
 %read from config file
 % i=1; %DEBUG DO NOT LEAVE IN ---------------------------------------------------------
 
+%%OPTIMISER TYPE: exp OR all
+%exp: 2-param exponential trap relaxation
+%all: N-param optimisation of ramp profile
+optimiser_type='exp';
+
 path_user_config='..\MloopUserConfig.txt';  % this is the user config file regardless of Mloop
 user_config_fp=fopen(path_user_config,'r');  % read config file
 
 while true
   this_line = fgetl(user_config_fp);
-  if ~ischar(this_line); break; end  %end of file
+  if ~ischar(this_line)
+      break;
+  end  %end of file
   eval(this_line);
 end
 fclose(user_config_fp);
@@ -137,19 +144,18 @@ paths = {
 %can also conjoin variables so they are set to the same parameter, simply
 %put their paths into a cell array in athe paths master list
 quad_lims = [0.14,3.4];
-%shunt_lims = [0,0.75];
 shunt_lims = [0,1];
-param_limits=[repmat(quad_lims,7,1);repmat(shunt_lims,7,1)];    % NOTE: hard-coded parameter limits
+param_limits=[repmat(quad_lims,7,1);repmat(shunt_lims,7,1)];    % NOTE: MATLAB's hard-coded parameter limits
+
+%shunt boundaries (start and end points for ramp design)
+Vquad_boundary=[3.4,0.14];
+Vshunt_boundary=[0,0.87];
 
 %%Independent exponential ramp scan for various time constants (2D)
 if i==1 && ~mloop && control
-    %shunt boundaries (start and end points for exponential ramp design)
-    Vquad_boundary=[3.4,0.14];
-    Vshunt_boundary=[0,0.87];
-    
     ntau_lim=[1,10];        %param lims - number of exponential constants
     n_search=20;            %interp points in lim to search for param
-    n_shot_avg=1;          %number of shots to take per param set
+    n_shot_avg=1;           %number of shots to take per param set
     n_interp=7;             %14[7/7] param shunt
     ntau=linspace(ntau_lim(1),ntau_lim(2),n_search);    %single-dim param in linear space
     
@@ -162,11 +168,12 @@ if i==1 && ~mloop && control
     n_total_perm=size(ntau_perm,1);
     param_values=zeros(n_total_perm,n_interp*2);    %n_total_perm X 14 (7/7 ramp)
     for ii=1:n_total_perm
-        param_values(ii,:)=[exp_ramp(Vquad_boundary(1),Vquad_boundary(2),n_interp,ntau_perm(ii,1)),...
-            exp_ramp(Vshunt_boundary(1),Vshunt_boundary(2),n_interp,ntau_perm(ii,2))];
+        %exponential profile
+        param_values(ii,:)=[exp_ramp_cont(Vquad_boundary,ntau_perm(ii,1),n_interp),...
+            exp_ramp_cont(Vshunt_boundary,ntau_perm(ii,2),n_interp)];
+%         param_values(ii,:)=[exp_ramp(Vquad_boundary(1),Vquad_boundary(2),n_interp,ntau_perm(ii,1)),...
+%             exp_ramp(Vshunt_boundary(1),Vshunt_boundary(2),n_interp,ntau_perm(ii,2))];
     end
-%     param_values=repmat(param_values,[n_shot_avg,1]);   %averaging shots
-%     param_values=param_values(randperm(size(param_values,1)),:);    %randomise param sets in run order
     
     %save params set and configs to disk
     %param_data is crucial since it is called every iteration by a new instance of interface script
@@ -248,11 +255,35 @@ if mloop
     file_id = fopen(file,'r');
     line = fgetl(file_id);
     fclose(file_id);
-    param = str2num(line(14:end-1));
-	
+    param=str2num(line(14:end-1));    %param array parsed from exp_input.txt
+    
+    %%evaluate shunt profiles
+    if ~isexist('optimiser_type','var')
+        %default is all segment search
+        optimiser_type='all';
+    end
+    %Exponential trap relaxation mode
+    if isequal(optimiser_type,'exp')
+        %param should be a 1x2 array of n_tau for quad and shunt
+        ntau_param=param;
+        %convert to a 7/7 param profile for passing to Labview
+        param=zeros(1,14);  %TODO length of nparam in MLOOP and labview are hardcoded at this stage
+        param(1:7)=exp_ramp_cont(Vquad_boundary,ntau_param(1),7);       %quad
+        param(8:end)=exp_ramp_cont(Vshunt_boundary,ntau_param(2),7);    %shunt
+        
+        %WRITE TO DISK PARAMS MLOOP WORKS WITH
+        file_name = 'param_log.txt';
+        if i==1
+            file_pointer = fopen(file_name,'w');
+        else
+            file_pointer = fopen(file_name,'a');
+        end
+        fprintf(file_pointer,[mat2str(ntau_param),'\n']);
+        fclose(file_pointer);
+    end
+    
 % 	copyfile(file,'C:\Users\BEC Machine\Dropbox\debug\exp_input_cp.txt');	% DEBUG
-	
-    delete(file);
+    delete(file);   %delete MLOOP's param output to experiment
     
     f_log=fopen(path_log,'a');  % append to log-file
     fprintf(f_log,[datestr(datetime,'yyyymmdd_HHMMSS'),' interfacev5    : Read in params from mloop=[%s] \n'],num2str(param));
@@ -276,7 +307,7 @@ else
         num_param_set=size(param_values,1);     %number of parameter sets
         
         try
-            idx_param=mod(i-1,num_param_set)+1;     %param idx to run - loops
+            idx_param=mod(i-1,num_param_set)+1;     % idx to run - loops
             param=param_values(idx_param,:);
             file_name = 'param_log.txt';
             if i==1
@@ -301,7 +332,6 @@ end
 conjoined_indx = [];
 
 for idx=1:numel(paths)
-    
     %check if param values are within the hard coded safety range
     if param(idx)>param_limits(idx,2)
         param(idx) = param_limits(idx,2);
@@ -320,7 +350,7 @@ for idx=1:numel(paths)
         % solitary variable
         paths{idx}{end} = num2str(param(idx));
     end
-end  
+end
 
 %split up conjoined variables
 if numel(conjoined_indx)>0
