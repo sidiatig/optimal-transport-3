@@ -17,16 +17,22 @@ file_id=1:1400;  % file ids to analyse
 fopts.xlim=[-35e-3, 20e-3];
 fopts.ylim=[-10e-3, 18e-3];
 
-fopts.t_0=2.6075;
-
 fopts.dt=10e-3;
+fopts.t_0=2.6075;
 fopts.n_pulse=110;
 
-%general flags
-% fopts.min_count=1000;
-fopts.num_in_win=30;        % minimum counts per window (avgd) to pass number penalty
-fopts.min_window_pass=10;   % minimum good windows to pass for oscillation analysis
+%%%pass/fail/penalty
+%pulse picking success rate
+fopts.win_capture_rate=0.8;      %pulse/window capture rate for pass/fail
+%pkpk amplitude penalty
+fopts.pkpk_penalty=false;
+%low number penalty
+fopts.num_win_penalty=30;       %minimum counts per window (avgd) to pass number penalty
+%width penalty
+fopts.width_sat=[8e-3,5e-3,6e-3];
+fopts.penalty_width_sat=[];      %set to [] to turn penalty OFF
 
+%output
 fopts.log=false;
 fopts.graphics=false;
 

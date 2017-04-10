@@ -21,11 +21,18 @@ fopts.dt=10e-3;
 fopts.t_0=0.80743;
 fopts.n_pulse=310;
 
-%general flags
-% fopts.min_count=1000;
-fopts.num_in_win=30;        % minimum counts per window (avgd) to pass number penalty
-fopts.min_window_pass=10;   % minimum good windows to pass for oscillation analysis
+%%%pass/fail/penalty
+%pulse picking success rate
+fopts.win_capture_rate=0.8;     %pulse/window capture rate for pass/fail
+%pkpk amplitude penalty
+fopts.pkpk_penalty=false;
+%low number penalty
+fopts.num_win_penalty=[];       %minimum counts per window (avgd) to pass number penalty
+%width penalty
+fopts.width_sat=[8e-3,5e-3,6e-3];
+fopts.penalty_width_sat=[];      %set to [] to turn penalty OFF
 
+%output
 fopts.log=false;
 fopts.graphics=false;
 
