@@ -141,7 +141,8 @@ switch choice
         num_win_penalty=fopts.num_win_penalty;      %set to [] to turn number penalty OFF
         win_capture_rate=fopts.win_capture_rate;
         dw=dt;          % width of pulse picking window in time
-
+        
+        penalty_width_sat=fopts.penalty_width_sat;
 %         %width penalty
 %         width_sat=[8e-3,5e-3,6e-3];
 %         penalty_width_sat=0.1;      %set to [] to turn penalty OFF
@@ -163,7 +164,8 @@ switch choice
         end
         
         if ~outerr
-            [outval,outerr]=PosAnalyser(filepath,startfile,1,window,false,dld_xy_rot,false);
+            [outval,outerr]=PosAnal(filepath,startfile,1,window,false,dld_xy_rot,false);
+%             [outval,outerr]=PosAnalyser(filepath,startfile,1,window,false,dld_xy_rot,false);
         end
         
         if outerr

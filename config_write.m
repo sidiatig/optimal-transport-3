@@ -54,19 +54,25 @@ selecter = find(param_select);
 
 %number of parameters to control
 N = sum(param_select);
+if isequal(problem_type,'exp')
+    N=2;    % 2 param optimisation
+end
 fprintf(file,'num_params = %d\n',N);
 
 %vectors of the bounds for all parameters
-lower_bounds=lower_bounds(logical(param_select));
+if ~isequal(problem_type,'exp')
+    lower_bounds=lower_bounds(logical(param_select));
+    upper_bounds=upper_bounds(logical(param_select));
+end
 lower_bounds_str=strjoin(arrayfun(@(x) num2str(x),lower_bounds,'UniformOutput',false),',');
 fprintf(file,strcat('min_boundary = [',lower_bounds_str,']\n'));
-
-upper_bounds=upper_bounds(logical(param_select));
 upper_bounds_str=strjoin(arrayfun(@(x) num2str(x),upper_bounds,'UniformOutput',false),',');
 fprintf(file,strcat('max_boundary = [',upper_bounds_str,']\n'));
 
 %starting point for each parameter
-first=first(logical(param_select));
+if ~isequal(problem_type,'exp')
+    first=first(logical(param_select));
+end
 first_str=strjoin(arrayfun(@(x) num2str(x),first,'UniformOutput',false),',');
 param_select_str=strjoin(arrayfun(@(x) num2str(x),param_select,'UniformOutput',false),',');
 fprintf(file,strcat('first_params = [',first_str,']\n'));
