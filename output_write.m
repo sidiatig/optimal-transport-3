@@ -7,15 +7,15 @@ fopts.filepath=[dir_data,'\d'];     %filepath to data
 fopts.xlim=[-35e-3, 20e-3];     %tight XY lims to eliminate hot spot from destroying pulse widths
 fopts.ylim=[-10e-3, 18e-3];
 
-fopts.dt=10e-3;
-fopts.t_0=0.80743;
-fopts.n_pulse=310;
+fopts.dt=5e-3;
+fopts.t_0=1.950;
+fopts.n_pulse=300;
 
 %%%pass/fail/penalty
 %pulse picking success rate
-fopts.win_capture_rate=0.8;     %pulse/window capture rate for pass/fail
+fopts.win_capture_rate=0.5;     %pulse/window capture rate for pass/fail (0 to turn off)
 %pkpk amplitude penalty
-fopts.pkpk_penalty=false;
+fopts.pkpk_penalty=true;
 %low number penalty
 fopts.num_win_penalty=[];       %minimum counts per window (avgd) to pass number penalty
 %width penalty
