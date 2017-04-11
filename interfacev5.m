@@ -12,14 +12,10 @@
 %file,string purpose: tells program where to look for setting files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%OPTIMISER TYPE: exp OR all
-%exp: 2-param exponential trap relaxation
-%all: N-param optimisation of ramp profile
-optimiser_type='exp';
-
 path_user_config='..\MloopUserConfig.txt';  % this is the user config file regardless of Mloop
 user_config_fp=fopen(path_user_config,'r');  % read config file
 
+% run MloopUserConfig - loads the problem
 while true
   this_line = fgetl(user_config_fp);
   if ~ischar(this_line)
@@ -80,6 +76,7 @@ paths = {
 % Vquad_boundary=[3.4,0.25];
 % Vshunt_boundary=[0,0.75];
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 6Hz trap
 quad_lims = [0.14,3.4];
@@ -198,12 +195,11 @@ if mloop
     param=str2num(line(14:end-1));    %param array parsed from exp_input.txt
     
     %%evaluate shunt profiles
-    if ~exist('optimiser_type','var')
-        %default is all segment search
-        optimiser_type='all';
+    if ~exist('problem_type','var')
+        error('problem_type is undefined!');
     end
     %Exponential trap relaxation mode
-    if isequal(optimiser_type,'exp')
+    if isequal(problem_type,'exp')
         %param should be a 1x2 array of n_tau for quad and shunt
         ntau_param=param;
         %convert to a 7/7 param profile for passing to Labview
