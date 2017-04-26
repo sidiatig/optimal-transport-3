@@ -142,12 +142,6 @@ switch choice
         win_capture_rate=fopts.win_capture_rate;
         dw=dt;          % width of pulse picking window in time
         
-        penalty_width_sat=fopts.penalty_width_sat;
-%         %width penalty
-%         width_sat=[8e-3,5e-3,6e-3];
-%         penalty_width_sat=0.1;      %set to [] to turn penalty OFF
-% %         penalty_width_sat=[];      %set to [] to turn penalty OFF
-        
 		% misc params
 		v_tof=9.81*0.416;	% z-velocity of atom at detection event
 		dld_xy_rot=0.61;    % angle to rotate DLD XY coords
@@ -205,6 +199,7 @@ switch choice
             
             %% X-oscillations
             meanx=mean(x_avg,'omitnan');
+            meanx_width=mean(x_std,'omitnan');
             
             %fourier of average x position
             fftx=FFTxt(t_cent,x_avg(~isnan(x_avg))-meanx);
@@ -228,6 +223,7 @@ switch choice
             
             %% Y-oscillations
             meany=mean(y_avg,'omitnan');
+            meany_width=mean(y_std,'omitnan');
             %fourier of average y position
             ffty=FFTxt(t_cent,y_avg(~isnan(y_avg))-meany);
             %eliminate low level frequencies
@@ -251,6 +247,7 @@ switch choice
             % T - Z conversion
             dz_avg=v_tof*(t_avg-t_cent);		% z-deviation from window centre
             dz_std=v_tof*t_std;
+            meanz_width=mean(dz_std,'omitnan');
             
             meanz=mean(dz_avg,'omitnan');				% average z-deviation from window centre
             
@@ -306,10 +303,10 @@ switch choice
             end
             
             %%thermal/dephasing penalty
-            if isempty(penalty_width_sat)
+            if fopts.penalty_width_sat==0 
                 cost_penalty_pulsewidth=0;
             else
-                cost_penalty_pulsewidth=penalty_pulsewidth(output.width,width_sat,penalty_width_sat);
+                cost_penalty_pulsewidth=penalty_pulsewidth(output.width,fopts.width_sat,fopts.penalty_width_sat);
             end
             
             %add penalties to cost
@@ -383,8 +380,12 @@ switch choice
                 hold on;
                 xlim = get( gca, 'Xlim' );
                 plot( xlim, [costx+meanx costx+meanx] );
-                %             plot( xlim, [costx+meanx+uncx costx+meanx+uncx],'r' )
-                %             plot( xlim, [costx+meanx-uncx costx+meanx-uncx],'g' )
+                annotation('textbox',[0.6 0.75 0.3 0.15],...
+                    'String',{['mean : ',num2str(meanx*10^3,'%5.3f'),'mm'],...
+                    ['sd : ',num2str(output.osc_std(1)*10^3,'%5.3f'),'mm'],...
+                    ['avg width : ',num2str(meanx_width*10^3,'%5.3f'),'mm']},...
+                    'FontSize',13,...
+                    'EdgeColor',[1 1 1]);
                 plot( xlim, [-costx+meanx -costx+meanx] );
                 hold off;
                 xlabel('time (s)');
@@ -397,6 +398,12 @@ switch choice
                 xlim = get( gca, 'Xlim' );
                 plot( xlim, [costy+meany costy+meany] );
                 plot( xlim, [-costy+meany -costy+meany] );
+                annotation('textbox',[0.6 0.45 0.3 0.15],...
+                    'String',{['mean : ',num2str(meany*10^3,'%5.3f'),'mm'],...
+                    ['sd : ',num2str(output.osc_std(2)*10^3,'%5.3f'),'mm'],...
+                    ['avg width : ',num2str(meany_width*10^3,'%5.3f'),'mm']},...
+                    'FontSize',13,...
+                    'EdgeColor',[1 1 1]);
                 hold off;
                 xlabel('time (s)');
                 ylabel('Y (m)');
@@ -408,6 +415,12 @@ switch choice
                 xlim = get(gca,'Xlim');
                 plot(xlim,(costz+meanz)*[1,1]);
                 plot(xlim,(-costz+meanz)*[1,1]);
+                annotation('textbox',[0.6 0.15 0.3 0.15],...
+                    'String',{['mean : ',num2str(meanz*10^3,'%5.3f'),'mm'],...
+                    ['sd : ',num2str(output.osc_std(3)*10^3,'%5.3f'),'mm'],...
+                    ['avg width : ',num2str(meanz_width*10^3,'%5.3f'),'mm']},...
+                    'FontSize',13,...
+                    'EdgeColor',[1 1 1]);
                 hold off;
                 xlabel('time (s)');
                 ylabel('dZ (m)');
