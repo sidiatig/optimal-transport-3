@@ -54,8 +54,9 @@ end
 
 three_channel_multifile_output=cell(files);
 
-for n=1:files
-    current_file_str = num2str(filenumstart+n-1);
+nfiles=length(file_id);
+for fii=1:nfiles
+    current_file_str = num2str(file_id(fii));
     
     % Check if TXY-file needs to be generated
     if ~fileExists([filepath,'_txy_forc',current_file_str,'.txt']) &&...
@@ -63,7 +64,7 @@ for n=1:files
     	%disp(['converting file # ',num2str(filenumstart+n-1)])
         filestotxy=filestotxy+1;
         % Generate TXY-file from raw DLD file
-    	dld_raw_to_txy(filepath,filenumstart+n-1,filenumstart+n-1);
+    	dld_raw_to_txy(filepath,file_id(fii),file_id(fii));
     end
     
     % If TXY-file is still missing
@@ -86,7 +87,7 @@ for n=1:files
                 - three_channel_output(:,3)*sin_theta;
             three_channel_output_rot(:,3) = three_channel_output(:,2)*sin_theta...
                 + three_channel_output(:,3)*cos_theta;
-            three_channel_multifile_output{n} = three_channel_output_rot; 
+            three_channel_multifile_output{fii} = three_channel_output_rot; 
         end
     end
     if isverbose
