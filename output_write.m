@@ -4,11 +4,13 @@
 dir_data='Y:\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output';    % default data dir
 fopts.filepath=[dir_data,'\d'];     %filepath to data
 
-fopts.xlim=[-35e-3, 20e-3];     %tight XY lims to eliminate hot spot from destroying pulse widths
-fopts.ylim=[-10e-3, 18e-3];
+
+%thes options should not be defined in the script but rather a seprate config file
+fopts.xlim=[-35e-3, 25e-3];     %tight XY lims to eliminate hot spot from destroying pulse widths
+fopts.ylim=[-15e-3, 20e-3];
 
 fopts.dt=5e-3;
-fopts.t_0=1.950;
+fopts.t_0=2.06775;
 fopts.n_pulse=300;
 
 %%%pass/fail/penalty
@@ -17,10 +19,10 @@ fopts.win_capture_rate=0.5;     %pulse/window capture rate for pass/fail (0 to t
 %pkpk amplitude penalty
 fopts.pkpk_penalty=true;
 %low number penalty
-fopts.num_win_penalty=[];       %minimum counts per window (avgd) to pass number penalty
+fopts.num_win_penalty=15;       %minimum counts per window (avgd) to pass number penalty
 %width penalty
-fopts.width_sat=[8e-3,5e-3,6e-3];
-fopts.penalty_width_sat=[];      %set to [] to turn penalty OFF
+fopts.width_sat=[6e-3,3e-3,4e-3];
+fopts.penalty_width_sat=0.005;      %set to [] to turn penalty OFF
 
 fopts.log=true;
 fopts.graphics=true;
@@ -59,7 +61,7 @@ file_name = 'C:\Users\BEC Machine\Dropbox\labview control code\mloop_files\exp_o
 file = fopen(file_name,'w');
 
 fprintf(file,'cost = %f\n',cost);
-fprintf(file,'uncer = %f\n',unc);
+%fprintf(file,'uncer = %f\n',unc); %turn off output uncert
 fprintf(file,'bad = %s',bad);
 
 fclose(file);
