@@ -7,23 +7,23 @@
 %%Configs
 %experiment specific
 % data dir
-dir_data='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ml_shunt_14param\exp_shunt\0_25s_20x20';
+dir_data='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\optimal_transport\2d_exp_search\0_25s_20x20';
 dir_log=[dir_data,'\log'];          % dir for logs (currently output_write mat files)
 dir_output=[dir_data,'\output'];    % dir of output
 
 fopts.filepath=[dir_data,'\d'];     %filepath to data
-file_id=1:400;  % file ids to analyse
+file_id=1:800;  % file ids to analyse
 
 fopts.xlim=[-35e-3, 20e-3];
 fopts.ylim=[-10e-3, 18e-3];
 
 fopts.dt=10e-3;
-fopts.t_0=0.80743;
-fopts.n_pulse=310;
+fopts.t_0=0.9974;
+fopts.n_pulse=250;
 
 %%%pass/fail/penalty
 %pulse picking success rate
-fopts.win_capture_rate=0.8;     %pulse/window capture rate for pass/fail
+fopts.win_capture_rate=0.5;     %pulse/window capture rate for pass/fail
 %pkpk amplitude penalty
 fopts.pkpk_penalty=false;
 %low number penalty
@@ -177,7 +177,7 @@ best_ntau=ntau(best_id,:);
 hfig_best=figure();
 hold on;
 for ii=1:3
-    plot(t,best_osc(:,ii)-mean(best_osc(:,ii)),...
+    plot(t,best_osc(:,ii)-mean(best_osc(:,ii),'omitnan'),...
         'Linewidth',1.5);
 end
 box on;
