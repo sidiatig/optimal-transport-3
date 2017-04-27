@@ -14,23 +14,43 @@ dir_output=[dir_data,'\output'];    % dir of output
 fopts.filepath=[dir_data,'\d'];     %filepath to data
 file_id=1:800;  % file ids to analyse
 
-fopts.xlim=[-35e-3, 20e-3];
-fopts.ylim=[-10e-3, 18e-3];
+% NEW COST CONFIG
+fopts.xlim=[-35e-3, 25e-3];     %tight XY lims to eliminate hot spot from destroying pulse widths
+fopts.ylim=[-15e-3, 20e-3];
 
-fopts.dt=10e-3;
-fopts.t_0=0.9974;
-fopts.n_pulse=250;
+fopts.dt=5e-3;
+fopts.t_0=2.06775;
+fopts.n_pulse=300;
 
 %%%pass/fail/penalty
 %pulse picking success rate
-fopts.win_capture_rate=0.5;     %pulse/window capture rate for pass/fail
+fopts.win_capture_rate=0.5;     %pulse/window capture rate for pass/fail (0 to turn off)
 %pkpk amplitude penalty
-fopts.pkpk_penalty=false;
+fopts.pkpk_penalty=true;
 %low number penalty
-fopts.num_win_penalty=[];       %minimum counts per window (avgd) to pass number penalty
+fopts.num_win_penalty=15;       %minimum counts per window (avgd) to pass number penalty
 %width penalty
-fopts.width_sat=[8e-3,5e-3,6e-3];
-fopts.penalty_width_sat=[];      %set to [] to turn penalty OFF
+fopts.width_sat=[6e-3,3e-3,4e-3];
+fopts.penalty_width_sat=0.005;      %set to [] to turn penalty OFF
+
+% OLD COST CONFIG
+% fopts.xlim=[-35e-3, 20e-3];
+% fopts.ylim=[-10e-3, 18e-3];
+% 
+% fopts.dt=10e-3;
+% fopts.t_0=0.9974;
+% fopts.n_pulse=250;
+% 
+% %%%pass/fail/penalty
+% %pulse picking success rate
+% fopts.win_capture_rate=0.5;     %pulse/window capture rate for pass/fail
+% %pkpk amplitude penalty
+% fopts.pkpk_penalty=false;
+% %low number penalty
+% fopts.num_win_penalty=[];       %minimum counts per window (avgd) to pass number penalty
+% %width penalty
+% fopts.width_sat=[8e-3,5e-3,6e-3];
+% fopts.penalty_width_sat=[];      %set to [] to turn penalty OFF
 
 %output
 fopts.log=false;
@@ -216,6 +236,35 @@ ylabel('PAL rms width (m)');
 axis tight;
 legend({'X','Y','Z'});
 
+%%Breathing mode and oscillation optimisation
+%evaluate breathing mode
+bec_width_rms=zeros(n_shots,3);
+for ii=1:n_shots
+    if ~isempty(output{ii})
+        %breathing mode magnitude as rms of pulse width (std)
+        bec_width_rms(ii,:)=std(output{ii}.width,1);
+    else
+        bec_width_rms(ii,:)=nan;
+    end
+end
+hfig_breathingmode=figure();
+hold on;
+%original cost
+cost_max_disp_better=10e-3;
+scatter(file_id(cost<cost_max_disp_better),cost(cost<cost_max_disp_better),10,'o',...
+    'filled');   % don't plot bad costs
+%breathing mode magnitude
+for jj=1:3
+    scatter(1:n_shots,bec_width_rms(:,jj),10,'^','filled');   %breathing mode in each axis
+end
+box on;
+titlestr=sprintf('Cost function and breathing mode');
+title(titlestr);
+xlabel('Iteration');
+ylabel('Cost function (m)');
+legend({'original cost','$\Delta\sigma_X$','$\Delta\sigma_Y$','$\Delta\sigma_Z$'});
+
+
 %% Save output
 %output directory
 if ~isdir(dir_output)
@@ -229,6 +278,7 @@ saveas(hfig_exp_vgood,[dir_output,'\','ml_progress_vgood.png']);  % ML progress 
 saveas(hfig_best,[dir_output,'\','best_oscillation.png']);        % best shot - oscillations
 saveas(hfig_best_profile,[dir_output,'\','best_profile.png']);    % best shot - shunt profile
 saveas(hfig_best_breathing,[dir_output,'\','best_breathing.png']);  	% best shot - rms width oscillation
+saveas(hfig_breathingmode,[dir_output,'\','breathing_mode.png']); % breathing mode
 
 %%Figures .fig
 saveas(hfig_exp_not_bad,[dir_output,'\','ml_progress_not_bad.fig']);       % ML progress - all costs except bad
@@ -237,6 +287,7 @@ saveas(hfig_exp_vgood,[dir_output,'\','ml_progress_vgood.fig']);  % ML progress 
 saveas(hfig_best,[dir_output,'\','best_oscillation.fig']);        % best shot - oscillations
 saveas(hfig_best_profile,[dir_output,'\','best_profile.fig']);    % best shot - shunt profile
 saveas(hfig_best_breathing,[dir_output,'\','best_breathing.fig']);  	% best shot - rms width oscillation
+saveas(hfig_breathingmode,[dir_output,'\','breathing_mode.fig']); % breathing mode
 
 %%Data
 save([dir_output,'\','ml_summary_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat']);  %save all vars

@@ -7,30 +7,50 @@
 
 %%configs
 %experiment specific
-dir_data='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\optimal_transport\ml_14_param\run6';    % data dir
+dir_data='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\ML_Optimal_Transport\ml_14_param\run7';    % data dir
 dir_log=[dir_data,'\log'];          % dir for logs (currently output_write mat files)
 dir_output=[dir_data,'\output'];    % dir of output
 
 fopts.filepath=[dir_data,'\d'];     %filepath to data
-file_id=1:871;  % file ids to analyse
+file_id=1:1462;  % file ids to analyse
 
-fopts.xlim=[-35e-3, 20e-3];
-fopts.ylim=[-10e-3, 18e-3];
+% NEW COST CONFIG
+fopts.xlim=[-35e-3, 25e-3];     %tight XY lims to eliminate hot spot from destroying pulse widths
+fopts.ylim=[-15e-3, 20e-3];
 
 fopts.dt=10e-3;
-fopts.t_0=2.6073;
+fopts.t_0=2.6075;
 fopts.n_pulse=110;
 
 %%%pass/fail/penalty
 %pulse picking success rate
-fopts.win_capture_rate=0.8;      %pulse/window capture rate for pass/fail
+fopts.win_capture_rate=0.5;     %pulse/window capture rate for pass/fail (0 to turn off)
 %pkpk amplitude penalty
-fopts.pkpk_penalty=false;
+fopts.pkpk_penalty=true;
 %low number penalty
-fopts.num_win_penalty=[];       %minimum counts per window (avgd) to pass number penalty
+fopts.num_win_penalty=15;       %minimum counts per window (avgd) to pass number penalty
 %width penalty
-fopts.width_sat=[8e-3,5e-3,6e-3];
-fopts.penalty_width_sat=[];      %set to [] to turn penalty OFF
+fopts.width_sat=[6e-3,3e-3,4e-3];
+fopts.penalty_width_sat=0.005;      %set to [] to turn penalty OFF
+
+% OLD COST CONFIG
+% fopts.xlim=[-35e-3, 20e-3];
+% fopts.ylim=[-10e-3, 18e-3];
+% 
+% fopts.dt=10e-3;
+% fopts.t_0=2.6073;
+% fopts.n_pulse=110;
+% 
+% %%%pass/fail/penalty
+% %pulse picking success rate
+% fopts.win_capture_rate=0.8;      %pulse/window capture rate for pass/fail
+% %pkpk amplitude penalty
+% fopts.pkpk_penalty=false;
+% %low number penalty
+% fopts.num_win_penalty=[];       %minimum counts per window (avgd) to pass number penalty
+% %width penalty
+% fopts.width_sat=[8e-3,5e-3,6e-3];
+% fopts.penalty_width_sat=[];      %set to [] to turn penalty OFF
 
 %output
 fopts.log=false;
@@ -120,7 +140,7 @@ for ii=1:3
 end
 box on;
 axis tight;
-titlestr=sprintf('ML: best shot %d',file_id(best_id));
+titlestr=sprintf('Best 14-ML [%d]: cost=%0.3g',best_id,best_cost);
 title(titlestr);
 xlabel('Time (s)');
 ylabel('Position (m)');
@@ -134,7 +154,7 @@ plot_shunt_profile(best_profile,param_boundary,hfig_best_profile);
 box on;
 axis tight;
 
-titlestr=sprintf('ML: best shot %d',file_id(best_id));
+titlestr=sprintf('Best 14-ML [%d]: cost=%0.3g',best_id,best_cost);
 title(titlestr);
 xlabel('Profile segment');
 ylabel('DAQ voltage (V)');
@@ -152,7 +172,7 @@ if file_id(best_id)~=1
         'Linewidth',1.2);
     end
     box on;
-    titlestr=sprintf('Exponential shunt');
+    titlestr=sprintf('First exponential profile: cost=%0.3g',exp_cost);
     title(titlestr);
     xlabel('Time (s)');
     ylabel('Position (m)');
@@ -164,13 +184,31 @@ if file_id(best_id)~=1
     exp_profile=shunt_params{idx_params==1};
     plot_shunt_profile(exp_profile,param_boundary,hfig_exp_profile);
     
-    titlestr=sprintf('Exponential shunt');
+    titlestr=sprintf('First exponential profile: cost=%0.3g',exp_cost);
     title(titlestr);
     xlabel('Profile segment');
     ylabel('DAQ voltage (V)');
 end
 
-%% Breathing mode
+%%Breathing mode
+%best only
+best_width=output{best_id}.width;
+
+hfig_best_breathing=figure();
+hold on;
+for ii=1:3
+    plot(t,best_width(:,ii),...
+        'LineWidth',1.5);
+end
+box on;
+titlestr=sprintf('Best 14-ML [%d]: cost=%0.3g',best_id,best_cost);
+title(titlestr);
+xlabel('Time (s)');
+ylabel('PAL rms width (m)');
+axis tight;
+legend({'X','Y','Z'});
+
+%%Breathing mode and oscillation optimisation
 %evaluate breathing mode
 bec_width_rms=zeros(n_shots,3);
 for ii=1:n_shots
@@ -198,22 +236,31 @@ xlabel('Iteration');
 ylabel('Cost function (m)');
 legend({'original cost','$\Delta\sigma_X$','$\Delta\sigma_Y$','$\Delta\sigma_Z$'});
 
-
 %% Save output
 %output directory
 if ~isdir(dir_output)
     mkdir(dir_output);
 end
 
-%%Figures
+%%Figures PNG
 saveas(hfig_ml_not_bad,[dir_output,'\','ml_not_bad.png']);       % ML progress - all costs except bad
 saveas(hfig_ml_good,[dir_output,'\','ml_good.png']);  % ML progress - low costs
 saveas(hfig_best,[dir_output,'\','best_oscillation.png']);        % best shot - oscillations
 saveas(hfig_best_profile,[dir_output,'\','best_profile.png']);    % best shot - shunt profile
 saveas(hfig_exp,[dir_output,'\','exp_oscillation.png']);          % exp benchmark - oscillations
 saveas(hfig_exp_profile,[dir_output,'\','exp_profile.png']);      % exp benchmark - shunt profile
-
+saveas(hfig_best_breathing,[dir_output,'\','best_breathing.png']);  	% best shot - rms width oscillation
 saveas(hfig_breathingmode,[dir_output,'\','breathing_mode.png']); % breathing mode
+
+%%Figures .fig
+saveas(hfig_ml_not_bad,[dir_output,'\','ml_not_bad.fig']);       % ML progress - all costs except bad
+saveas(hfig_ml_good,[dir_output,'\','ml_good.fig']);  % ML progress - low costs
+saveas(hfig_best,[dir_output,'\','best_oscillation.fig']);        % best shot - oscillations
+saveas(hfig_best_profile,[dir_output,'\','best_profile.fig']);    % best shot - shunt profile
+saveas(hfig_exp,[dir_output,'\','exp_oscillation.fig']);          % exp benchmark - oscillations
+saveas(hfig_exp_profile,[dir_output,'\','exp_profile.fig']);      % exp benchmark - shunt profile
+saveas(hfig_best_breathing,[dir_output,'\','best_breathing.fig']);  	% best shot - rms width oscillation
+saveas(hfig_breathingmode,[dir_output,'\','breathing_mode.fig']); % breathing mode
 
 %%Data
 save([dir_output,'\','ml_summary_',datestr(datetime,'yyyymmdd_HHMMSS'),'.mat']);  %save all vars
